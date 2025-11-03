@@ -10,7 +10,7 @@ export default defineConfig(({ command }) => {
       vue(),
       viteMockServe({
         mockPath: 'mock',
-        enable: command === 'serve' || command === 'build', // 修改这里，让build时也启用
+        enable: true,
         logger: true,
         supportTs: false
       })
