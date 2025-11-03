@@ -9,7 +9,7 @@ export default defineConfig(({ command }) => {
     plugins: [
       vue(),
       viteMockServe({
-        mockPath: 'mock',
+        mockPath: 'public/mock', // 指向 public 目录下的 mock
         enable: true,
         logger: true,
         supportTs: false
