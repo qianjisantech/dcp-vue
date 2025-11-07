@@ -24,7 +24,7 @@ export function logout() {
 
 export function getPermissions() {
   return request({
-    url: '/auth/permissions',
+    url: '/auth/profile',
     method: 'get'
   })
 }

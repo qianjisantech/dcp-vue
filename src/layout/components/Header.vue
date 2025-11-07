@@ -9,15 +9,27 @@
       <h2 class="page-title">{{ pageTitle }}</h2>
     </div>
 
+    <!-- 滚动通知 -->
+    <div class="notice-wrapper">
+      <t-icon name="notification" size="18px" class="notice-icon" />
+      <div class="notice-scroll">
+        <div class="notice-content">
+          <span v-for="(notice, index) in notices" :key="index" class="notice-item">
+            {{ notice.content }}
+          </span>
+        </div>
+      </div>
+    </div>
+
     <div class="header-right">
       <div class="search-wrapper" :class="{ 'search-focused': searchFocused }">
         <t-input
-          v-model="searchTaskNumber"
+          v-model="searchIssueNumber"
           placeholder="搜索事项单号或者概要"
           clearable
           @focus="searchFocused = true"
           @blur="searchFocused = false"
-          @enter="handleSearch"
+          @keyup.enter="handleSearch"
           class="search-input"
         >
           <template #prefix-icon>
@@ -62,9 +74,9 @@
     >
       <div class="create-task-form">
         <t-form :data="taskForm" label-align="left" label-width="80px">
-          <t-form-item label="空间" name="space">
+          <t-form-item label="空间" name="spaceId">
             <t-select
-              v-model="taskForm.space"
+              v-model="taskForm.spaceId"
               placeholder="请选择空间"
               clearable
             >
@@ -77,10 +89,10 @@
             </t-select>
           </t-form-item>
 
-          <t-form-item label="任务类型" name="task_type">
+          <t-form-item label="事项类型" name="issueType">
             <t-select
-              v-model="taskForm.task_type"
-              placeholder="请选择任务类型"
+              v-model="taskForm.issueType"
+              placeholder="请选择事项类型"
               clearable
             >
               <t-option
@@ -149,11 +161,13 @@
 </template>
 
 <script setup>
-import { ref, computed } from 'vue'
+import { ref, computed, onMounted } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
 import { useUserStore } from '@/store/user'
 import { useWorkspaceStore } from '@/store/workspace'
 import { MessagePlugin } from 'tdesign-vue-next'
+import { getBannerNotifications } from '@/api/notification'
+import { createIssue } from '@/api/workspace'
 
 const router = useRouter()
 const route = useRoute()
@@ -161,14 +175,17 @@ const userStore = useUserStore()
 const workspaceStore = useWorkspaceStore()
 
 const username = ref('Admin')
-const searchTaskNumber = ref('')
+const searchIssueNumber = ref('')
 const searchFocused = ref(false)
 const showCreateDialog = ref(false)
 
+// 通知数据
+const notices = ref([])
+
 // 表单数据
 const taskForm = ref({
-  space: '',
-  task_type: '',
+  spaceId: '',
+  issueType: '',
   summary: '',
   tags: [],
   description: '',
@@ -177,6 +194,9 @@ const taskForm = ref({
 
 // 空间选项（从用户store中获取）
 const spaceOptions = computed(() => {
+  if (!userStore.userSpaces || !Array.isArray(userStore.userSpaces)) {
+    return []
+  }
   return userStore.userSpaces.map(space => ({
     value: space.id,
     label: space.name
@@ -201,19 +221,55 @@ const priorityOptions = ref([
 // 页面标题映射
 const pageTitleMap = {
   // 工作台
-  '/workspace/todo': '我的事项',
+  '/workspace/issue': '我的事项',
   '/workspace/myview': '我的视图',
   // 其他一级菜单
   '/space': '空间',
-  '/settings': '设置'
+  '/announcement': '公告'
+}
+
+// 设置页面标题特殊处理
+const getSettingsTitle = (path) => {
+  const settingsTitles = {
+    '/settings/account': '账号设置',
+    '/settings/notification': '通知设置',
+    '/settings/privacy': '隐私设置',
+    '/settings/system-basic': '基础设置',
+    '/settings/system-advanced': '高级设置',
+    '/settings/security-password': '密码管理',
+    '/settings/security-auth': '双重认证',
+    '/settings/security-log': '登录日志'
+  }
+  return settingsTitles[path] || '设置'
 }
 
 const pageTitle = computed(() => {
+  // 如果是设置页面，使用特殊处理
+  if (route.path.startsWith('/settings')) {
+    return getSettingsTitle(route.path)
+  }
   return pageTitleMap[route.path] || '工作台'
 })
 
 const userInitial = computed(() => {
   return username.value.charAt(0).toUpperCase()
+})
+
+// 获取滚动通知
+const fetchBannerNotifications = async () => {
+  try {
+    const res = await getBannerNotifications()
+    if (res.success) {
+      notices.value = res.data.list
+    }
+  } catch (error) {
+    console.error('获取通知失败:', error)
+  }
+}
+
+// 组件挂载时获取通知
+onMounted(() => {
+  fetchBannerNotifications()
 })
 
 const handleUserCenter = () => {
@@ -227,19 +283,19 @@ const handleLogout = () => {
 }
 
 const handleSearch = () => {
-  if (!searchTaskNumber.value.trim()) {
+  if (!searchIssueNumber.value.trim()) {
     MessagePlugin.warning('请输入搜索内容')
     return
   }
   // 将搜索内容存储到store中，Workspace组件会监听并进行筛选
-  workspaceStore.setSearchTaskNumber(searchTaskNumber.value)
+  workspaceStore.setSearchIssueNumber(searchIssueNumber.value)
 
   // 如果不在工作台页面，则跳转到工作台
-  if (route.path !== '/workspace/todo') {
-    router.push('/workspace/todo')
+  if (route.path !== '/workspace/issue') {
+    router.push('/workspace/issue')
   }
 
-  MessagePlugin.success(`搜索: ${searchTaskNumber.value}`)
+  MessagePlugin.success(`搜索: ${searchIssueNumber.value}`)
 }
 
 const handleCreate = () => {
@@ -249,8 +305,8 @@ const handleCreate = () => {
 // 重置表单
 const resetForm = () => {
   taskForm.value = {
-    space: '',
-    task_type: '',
+    spaceId: '',
+    issueType: '',
     summary: '',
     tags: [],
     description: '',
@@ -265,27 +321,71 @@ const handleCancel = () => {
 }
 
 // 提交并创建下一个
-const handleCreateAndNext = () => {
+const handleCreateAndNext = async () => {
   if (!taskForm.value.summary) {
     MessagePlugin.warning('请输入概要')
     return
   }
-  // TODO: 调用创建接口
-  MessagePlugin.success('创建成功')
-  resetForm()
-  // 保持弹窗打开，继续创建下一个
+  if (!taskForm.value.spaceId) {
+    MessagePlugin.warning('请选择空间')
+    return
+  }
+
+  try {
+    // 将tags数组转换为逗号分隔的字符串
+    const submitData = {
+      ...taskForm.value,
+      tags: Array.isArray(taskForm.value.tags) ? taskForm.value.tags.join(',') : taskForm.value.tags
+    }
+
+    const res = await createIssue(submitData)
+    if (res.success || res.code === 200) {
+      MessagePlugin.success('创建成功')
+      resetForm()
+      // 刷新事项列表
+      workspaceStore.refreshIssueList()
+      // 保持弹窗打开，继续创建下一个
+    } else {
+      MessagePlugin.error(res.message || '创建失败')
+    }
+  } catch (error) {
+    console.error('创建事项失败:', error)
+    MessagePlugin.error('创建失败，请重试')
+  }
 }
 
 // 创建
-const handleSubmit = () => {
+const handleSubmit = async () => {
   if (!taskForm.value.summary) {
     MessagePlugin.warning('请输入概要')
     return
   }
-  // TODO: 调用创建接口
-  MessagePlugin.success('创建成功')
-  showCreateDialog.value = false
-  resetForm()
+  if (!taskForm.value.spaceId) {
+    MessagePlugin.warning('请选择空间')
+    return
+  }
+
+  try {
+    // 将tags数组转换为逗号分隔的字符串
+    const submitData = {
+      ...taskForm.value,
+      tags: Array.isArray(taskForm.value.tags) ? taskForm.value.tags.join(',') : taskForm.value.tags
+    }
+
+    const res = await createIssue(submitData)
+    if (res.success || res.code === 200) {
+      MessagePlugin.success('创建成功')
+      showCreateDialog.value = false
+      resetForm()
+      // 刷新事项列表
+      workspaceStore.refreshIssueList()
+    } else {
+      MessagePlugin.error(res.message || '创建失败')
+    }
+  } catch (error) {
+    console.error('创建事项失败:', error)
+    MessagePlugin.error('创建失败，请重试')
+  }
 }
 </script>
 
@@ -335,6 +435,55 @@ const handleSubmit = () => {
       font-weight: 600;
       color: #000;
       margin: 0;
+    }
+  }
+
+  .notice-wrapper {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    background: linear-gradient(135deg, #e8f4ff 0%, #d6ebff 100%);
+    border-radius: 6px;
+    padding: 8px 12px;
+    width: 380px;
+    overflow: hidden;
+    margin-left: auto;
+    margin-right: 94px;
+
+    .notice-icon {
+      color: #0052d9;
+      flex-shrink: 0;
+    }
+
+    .notice-scroll {
+      flex: 1;
+      overflow: hidden;
+      position: relative;
+      height: 20px;
+
+      .notice-content {
+        display: flex;
+        white-space: nowrap;
+        animation: scrollNotice 30s linear infinite;
+
+        .notice-item {
+          font-size: 13px;
+          color: #0052d9;
+          margin-right: 80px;
+          display: inline-block;
+
+          &::before {
+            content: '●';
+            margin-right: 8px;
+            font-size: 8px;
+            vertical-align: middle;
+          }
+        }
+      }
+
+      &:hover .notice-content {
+        animation-play-state: paused;
+      }
     }
   }
 
@@ -432,6 +581,16 @@ const handleSubmit = () => {
     margin-top: 30px;
     padding-top: 20px;
     border-top: 1px solid #e7e7e7;
+  }
+}
+
+// 通知滚动动画
+@keyframes scrollNotice {
+  0% {
+    transform: translateX(100%);
+  }
+  100% {
+    transform: translateX(-100%);
   }
 }
 </style>

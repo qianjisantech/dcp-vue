@@ -4,11 +4,17 @@
   "version": "0.0.0",
   "type": "module",
   "scripts": {
-    "dev": "vite",
-    "build": "vite build",
+    "dev": "vite --mode development",
+    "dev:test": "vite --mode test",
+    "dev:prod": "vite --mode production",
+    "build": "vite build --mode production",
+    "build:test": "vite build --mode test",
+    "build:dev": "vite build --mode development",
     "preview": "vite preview"
   },
   "dependencies": {
+    "@wangeditor/editor": "^5.1.23",
+    "@wangeditor/editor-for-vue": "^5.1.12",
     "axios": "^1.13.1",
     "js-cookie": "^3.0.5",
     "pinia": "^2.3.1",
@@ -19,9 +25,7 @@
   },
   "devDependencies": {
     "@vitejs/plugin-vue": "^4.6.2",
-    "mockjs": "^1.1.0",
     "sass": "^1.93.2",
-    "vite": "^4.5.14",
-    "vite-plugin-mock": "^3.0.2"
+    "vite": "^4.5.14"
   }
 }

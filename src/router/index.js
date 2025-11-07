@@ -4,12 +4,12 @@ import Cookies from 'js-cookie'
 const routes = [
   {
     path: '/',
-    redirect: '/workspace/todo'
+    redirect: '/workspace/issue'
   },
   {
     path: '/login',
     name: 'Login',
-    component: () => import('@/views/Login.vue'),
+    component: () => import('@/views/auth/Login.vue'),
     meta: { title: '登录', requiresAuth: false }
   },
   {
@@ -32,10 +32,16 @@ const routes = [
       },
       // 工作台路由
       {
-        path: 'workspace/todo',
-        name: 'WorkspaceTodo',
-        component: () => import('@/views/Workspace.vue'),
+        path: 'workspace/issue',
+        name: 'WorkspaceIssue',
+        component: () => import('@/views/workspace/Issue.vue'),
         meta: { title: '我的事项', requiresAuth: true }
+      },
+      {
+        path: 'workspace/view/my',
+        name: 'MyView',
+        component: () => import('@/views/workspace/MyView.vue'),
+        meta: { title: '我的视图', requiresAuth: true }
       },
       {
         path: 'space',
@@ -44,10 +50,44 @@ const routes = [
         meta: { title: '空间', requiresAuth: true }
       },
       {
+        path: 'announcement',
+        name: 'Announcement',
+        component: () => import('@/views/Announcement.vue'),
+        meta: { title: '公告', requiresAuth: true }
+      },
+      {
         path: 'settings',
+        redirect: '/settings/account'
+      },
+      {
+        path: 'settings/:type',
         name: 'Settings',
         component: () => import('@/views/Settings.vue'),
         meta: { title: '设置', requiresAuth: true }
+      },
+      {
+        path: 'feedback',
+        name: 'Feedback',
+        component: () => import('@/views/Feedback.vue'),
+        meta: { title: '反馈', requiresAuth: true }
+      },
+      {
+        path: 'changelog',
+        name: 'Changelog',
+        component: () => import('@/views/Changelog.vue'),
+        meta: { title: '发布日志', requiresAuth: true }
+      },
+      {
+        path: 'changelog/detail',
+        name: 'ChangelogDetail',
+        component: () => import('@/views/changelog/Detail.vue'),
+        meta: { title: '发布日志详情', requiresAuth: true }
+      },
+      {
+        path: 'operation-log',
+        name: 'OperationLog',
+        component: () => import('@/views/OperationLog.vue'),
+        meta: { title: '操作日志', requiresAuth: true }
       }
     ]
   }
@@ -73,7 +113,7 @@ router.beforeEach((to, from, next) => {
     })
   } else if (to.path === '/login' && token) {
     // 如果已登录访问登录页，跳转到我的事项
-    next('/workspace/todo')
+    next('/workspace/issue')
   } else {
     next()
   }

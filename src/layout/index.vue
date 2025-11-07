@@ -12,6 +12,9 @@
         </div>
       </div>
     </div>
+
+    <!-- 系统更新提醒 -->
+    <UpdateNotification ref="updateNotificationRef" />
   </div>
 </template>
 
@@ -20,10 +23,12 @@ import { ref, computed, onMounted } from 'vue'
 import { useRoute } from 'vue-router'
 import Sidebar from './components/Sidebar.vue'
 import Header from './components/Header.vue'
+import UpdateNotification from '@/components/UpdateNotification.vue'
 import { useUserStore } from '@/store/user'
 
 const userStore = useUserStore()
 const route = useRoute()
+const updateNotificationRef = ref(null)
 
 // 二级菜单展开状态
 const hasSecondary = ref(false)
@@ -35,7 +40,7 @@ const handleSecondaryChange = (isShow) => {
 
 // 根据二级菜单状态动态计算内容区域的左边距
 const sidebarWidth = computed(() => {
-  return hasSecondary.value ? '260px' : '80px'
+  return hasSecondary.value ? '320px' : '80px'
 })
 
 // 组件挂载时获取用户权限
@@ -55,7 +60,7 @@ onMounted(async () => {
   flex-direction: column;
   width: 100%;
   min-height: 100vh;
-  background: #f5f5f5;
+  background: #fff;
   position: relative;
 
   // 下方内容区域（Sidebar + Main）
@@ -76,9 +81,9 @@ onMounted(async () => {
 
     .layout-content {
       flex: 1;
-      padding: 6px 6px 24px 8px; // 上右6px，下24px，左8px
+      padding: 0; // 移除内边距，让内容紧贴菜单栏
       overflow-y: auto;
-      background: #f5f5f5;
+      background: #fff;
     }
   }
 }

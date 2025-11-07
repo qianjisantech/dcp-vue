@@ -13,7 +13,7 @@ export const useUserStore = defineStore('user', () => {
   const login = async (credentials) => {
     try {
       const res = await loginApi(credentials)
-      if (res.code === 200) {
+      if (res.success) {
         token.value = res.data.token
         userInfo.value = res.data.user_info
 
@@ -33,7 +33,7 @@ export const useUserStore = defineStore('user', () => {
   const getPermissions = async () => {
     try {
       const res = await getPermissionsApi()
-      if (res.code === 200) {
+      if (res.success) {
         menuPermissions.value = res.data.menu_permissions
         dataPermissions.value = res.data.data_permissions
         userSpaces.value = res.data.spaces
